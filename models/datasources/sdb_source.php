@@ -2,20 +2,44 @@
 /**
  * A CakePhP Datasource for Amazon SDB
  *
- * Original implementation by David Temes
- * Copyright 2011 David Temes
+ * Original implementation by David Temes Nov 2011
  * 
  * Based on the work from Yasushi Ichikawa http://github.com/ichikaway/
  * and the array_source by the CakePHP team
  *
- * This Datasource uses the amazon SDK for PKP
+ * This Datasource uses the amazon SDK for PKP from http://aws.amazon.com/es/sdkforphp/
  * 
  *
- * @copyright Copyright 2010, Yasushi Ichikawa http://github.com/ichikaway/
- * @package sdb
- * @subpackage sdb.models.datasources
- * @license http://www.opensource.org/licenses/mit-license.php The MIT License
+ * Licensed under The MIT License
+ * Redistributions of files must retain the above copyright notice.
+ *
+ * @copyright Copyright 2005-2010, Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link http://cakephp.org CakePHP(tm) Project
+ * @package datasources
+ * @subpackage datasources.models.datasources
+ * @since CakePHP Datasources v 0.3
+ * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
+ *
+ *
+ * Installation: 
+ * 		- Put the AWS sdk files in vendors/aws
+ * 
+ * Sample config file:
+ *
+ * var $sdb = array(
+ *		'datasource' => 'datasources.sdb',
+ *		'AWS_KEY'=> 'YOUR AWS KEY',
+ *		'AWS_SECRET_KEY'=>'YOUR SECRET KEY+0eYoANumEPKavBmM',
+ *		'AWS_ACCOUNT_ID'=>'YOUR ACCOUNT ID',
+ *		'AWS_CANONICAL_ID'=>'YOUR CANONICAL ID',
+ *		'AWS_CANONICAL_NAME'=>'David Temes',
+ *		//'cache_config'=>'apc',
+ *		//'cache_time'=>60,
+ *	);
+ * 
+ * 
  */ 
+ 
 
 //TODO: Region selection
 //TODO: Check update when posting multiple attributes with same name
