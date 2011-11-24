@@ -40,12 +40,11 @@
  * 
  */ 
  
-
-//TODO: Region selection
 //TODO: Check update when posting multiple attributes with same name
 //TODO: belongsto, hasone, hasandbelongstomany
 //TODO: override database cache time config with model specific config if set
 //TODO: Use UUID if primary key empty when saving
+//TODO: use fields and conditions in related queries
 
 class sdbSource extends DataSource {
     
@@ -101,6 +100,10 @@ public function __construct($config) {
 		$this->_cache=$config['cache_time'];
 		}
 	
+	if (isset($config['region'])){
+		$this->_sdb->set_region($config['region']);
+	}
+	
 	parent::__construct($config);
 	}
 	
@@ -154,7 +157,7 @@ public function read(&$model, $queryData = array()) {
 	$conditions=array();
 	
 	$startTime=getMicrotime();
-	
+	//DEBUG($queryData);
 	
 	if (!empty($queryData['conditions'])) {
 		$queryData['conditions'] = (array)$queryData['conditions'];
@@ -241,7 +244,7 @@ public function read(&$model, $queryData = array()) {
 	$options=array();
 	if (isset($model->ConsistentRead)){
 		$options['ConsistentRead']='true';
-		//$this->_cache=null;
+		$this->_cache=null;
 	}
 	
 	$fields=implode(',',$fields);
@@ -284,12 +287,24 @@ public function read(&$model, $queryData = array()) {
 					}
 				$found=true;
 			}
+			if ($found){
+				$data['id']=$primary_key;
+			}
+			
+			//check conditions
+			foreach ($queryData['conditions'] as $key=>$value){
+				$key=str_replace($model->alias.'.','',$key);
+				if ($data[$key]!=$value){
+					$found=false;
+					continue;
+				}
+			}
 			
 			//DEBUG($found);
 			if ($found){
 				$data['count']=1;
 				$model->id=$primary_key;
-				$data['id']=$primary_key;
+				//$data['id']=$primary_key;
 				$results[$i++][$model->alias]=$data;
 			}
 			//DEBUG($results);
@@ -309,7 +324,12 @@ public function read(&$model, $queryData = array()) {
 			$skip=" limit ".$queryData['offset'];
 			
 			$queryOffset='select count(*) from '.$model->useTable.$where.$order.$skip;
-			$response=$this->_sdb->cache($this->_cache)->select($queryOffset,$options);
+			
+			if ($this->_cache){
+				$response=$this->_sdb->cache($this->_cache)->select($queryOffset,$options);
+			} else {
+				$response=$this->_sdb->select($queryOffset,$options);
+			}
 			if ($response->isOK()){
 				$next_token = isset($response->body->SelectResult->NextToken)
 				? (string) $response->body->SelectResult->NextToken
