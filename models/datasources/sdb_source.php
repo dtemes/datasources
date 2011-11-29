@@ -42,9 +42,8 @@
  
 //TODO: Check update when posting multiple attributes with same name
 //TODO: belongsto, hasone, hasandbelongstomany
-//TODO: override database cache time config with model specific config if set
 //TODO: Use UUID if primary key empty when saving
-//TODO: use fields and conditions in related queries
+//TODO: use token to get more data in related queries
 
 class sdbSource extends DataSource {
     
@@ -156,6 +155,12 @@ public function read(&$model, $queryData = array()) {
 	$fields=array();
 	$conditions=array();
 	
+	//override cache config with model config
+	if (isset ($model->cache_config)){
+		$this->_cache_config=$model->cache_config;
+		$this->_cache=isset($model->cache_time)?$model->cache_time:60;
+	}
+	
 	$startTime=getMicrotime();
 	//DEBUG($queryData);
 	
@@ -242,7 +247,7 @@ public function read(&$model, $queryData = array()) {
 	//DEBUG($order);
 	
 	$options=array();
-	if (isset($model->ConsistentRead)){
+	if (isset($model->ConsistentRead) && $model->ConsistentRead==true){
 		$options['ConsistentRead']='true';
 		$this->_cache=null;
 	}
@@ -400,16 +405,24 @@ public function read(&$model, $queryData = array()) {
 							 );
 				
 				$sdbBatch = new AmazonSDB();		
-				//DEBUG($qdata);
+				
+				if ($this->_cache_config){
+					$sdbBatch->set_cache_config($this->_cache_config);
+				}
+				
 				foreach($results as $key=>$value){
 					$qdata['conditions'][$assoc.".".$assocData['foreignKey']]=$value[$model->alias][$model->primaryKey];
 					$batchQuery[$key]=$this->read($linkModel,$qdata);
-					$sdbBatch->batch()->select($batchQuery[$key]);
+					
+					if ($this->_cache_config){
+						$sdbBatch->batch()->cache($this->_cache)->select($batchQuery[$key]);
+					} else {
+						$sdbBatch->batch()->select($batchQuery[$key]);
+					}
 				}
 				
 				//get batch data
 				if ($this->_cache_config){
-					$sdbBatch->set_cache_config($this->_cache_config);
 					$responses=$sdbBatch->batch()->cache($this->_cache)->send(false);
 				} else {
 					$responses=$sdbBatch->batch()->send(false);
@@ -627,6 +640,7 @@ if ($type==='first')
 	}
 return $this->read($model,$querydata);
 }
+
 
 
 /**
