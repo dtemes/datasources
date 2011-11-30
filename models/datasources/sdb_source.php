@@ -158,7 +158,7 @@ public function read(&$model, $queryData = array()) {
 	//override cache config with model config
 	if (isset ($model->cache_config)){
 		$this->_cache_config=$model->cache_config;
-		$this->_cache=isset($model->cache_time)?$model->cache_time:60;
+		$this->_cache=isset($model->cache_time)?$model->cache_time:'1 minute';
 	}
 	
 	$startTime=getMicrotime();
@@ -406,27 +406,38 @@ public function read(&$model, $queryData = array()) {
 				
 				$sdbBatch = new AmazonSDB();		
 				
+				//NO CACHE USING BATCH, the way cache ids are created for batches can produce very  bad results
+				
+				//override cache config with model config
+				/*if (isset ($linkModel->cache_config)){
+					$this->_cache_config=$linkModel->cache_config;
+					$this->_cache=isset($linkModel->cache_time)?$linkModel->cache_time:'1 minute';
+				}
+				
+				
 				if ($this->_cache_config){
 					$sdbBatch->set_cache_config($this->_cache_config);
-				}
+					DEBUG($this->_cache_config." ".$this->_cache);
+				}*/
+				
+				
 				
 				foreach($results as $key=>$value){
 					$qdata['conditions'][$assoc.".".$assocData['foreignKey']]=$value[$model->alias][$model->primaryKey];
 					$batchQuery[$key]=$this->read($linkModel,$qdata);
-					
-					if ($this->_cache_config){
-						$sdbBatch->batch()->cache($this->_cache)->select($batchQuery[$key]);
-					} else {
+					//if ($this->_cache_config!=null){
+						//$sdbBatch->batch()->cache($this->_cache)->select($batchQuery[$key]);
+					//} else {
 						$sdbBatch->batch()->select($batchQuery[$key]);
-					}
+					//}
 				}
 				
 				//get batch data
-				if ($this->_cache_config){
-					$responses=$sdbBatch->batch()->cache($this->_cache)->send(false);
-				} else {
+				//if ($this->_cache_config){
+				//	$responses=$sdbBatch->batch()->cache($this->_cache)->send(false);
+				//} else {
 					$responses=$sdbBatch->batch()->send(false);
-				}
+				//}
 				
 				//DEBUG($responses);
 				//parse batch data
