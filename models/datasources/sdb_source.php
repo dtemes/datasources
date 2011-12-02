@@ -42,8 +42,8 @@
  
 //TODO: Check update when posting multiple attributes with same name
 //TODO: belongsto, hasone, hasandbelongstomany
-//TODO: Use UUID if primary key empty when saving
 //TODO: use token to get more data in related queries
+
 
 class sdbSource extends DataSource {
     
@@ -196,6 +196,7 @@ public function read(&$model, $queryData = array()) {
 		$queryData['fields'] = (array)$queryData['fields'];
 		foreach ($queryData['fields'] as $key=>$value) {
 			if ($value){
+				$value=str_replace($model->alias.'.','',$value);
 				$fields[]=$value;
 			}
 		}
@@ -294,12 +295,13 @@ public function read(&$model, $queryData = array()) {
 			}
 			if ($found){
 				$data['id']=$primary_key;
+				$data['itemName']=$primary_key;
 			}
 			
 			//check conditions
 			foreach ($queryData['conditions'] as $key=>$value){
 				$key=str_replace($model->alias.'.','',$key);
-				if ($data[$key]!=$value){
+				if (isset($data[$key]) && $data[$key]!=$value){
 					$found=false;
 					continue;
 				}
@@ -368,6 +370,7 @@ public function read(&$model, $queryData = array()) {
 					foreach ($response->body->SelectResult->Item as $item){
 					$data=array();
 					$data['id']=(string)$item->Name;
+					$data['itemName']=(string)$item->Name;
 					
 					foreach ($item->Attribute as $attribute){
 						if (isset($data[(string)$attribute->Name])){
@@ -530,7 +533,6 @@ return 'count(*)';
 * Save records
 */
 public function create($model, $fields = array(), $values = array()) {
-	
 	$startTime=getMicrotime();
 	//DEBUG("CREATE");
 	//DEBUG($model);
@@ -543,11 +545,14 @@ public function create($model, $fields = array(), $values = array()) {
 	//DEBUG($data);
 	if (isset($data['id'])){
 		$primary_key=$data['id'];
-		unset($data['id']);
+		unset($data['id']); //should we leave the id field?
 		}
-		else{
+		else if ($model->id!=null){
 		$primary_key=$model->id;
 		}
+		 else {
+			$primary_key=String::uuid();
+		 }
 	
 	//DEBUG($data);
 	
@@ -632,6 +637,10 @@ public function update($model, $fields = array(), $values = array()) {
 return $isOk;
 }	
 
+function name($alias){
+return $alias;
+}
+
 /**
 * Prepare a query
 */
@@ -639,10 +648,6 @@ public function query($method, $params, &$model){
 $type=$params[0];
 
 $field = Inflector::underscore(preg_replace('/^findBy/i', '', $method));
-
-//DEBUG("Field:".$field);
-//DEBUG($method);
-//DEBUG($params);
 
 $querydata=array('conditions'=>array($field=>$params[1]));
 if ($type==='first')
@@ -697,4 +702,3 @@ return $this->read($model,$querydata);
 	}
 
 }
-?>
